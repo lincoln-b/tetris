@@ -89,6 +89,7 @@ public class TetrominoGenerator : MonoBehaviour {
 	}
 
 	void GenerateTetromino() {
+		Debug.Log ("Generating");
 		System.Random rnd = new System.Random ();
 		int index = rnd.Next (0, 7);
 		GameObject[] tetrominoes = { straight, square, tee, rightDog, leftDog, rightElbow, leftElbow };
@@ -101,9 +102,21 @@ public class TetrominoGenerator : MonoBehaviour {
 		{
 			Vector3 pos = activeTetromino.transform.position;
 			if (gesture.FocusX < Screen.width / 2) {
+				Transform[] cubes = activeTetromino.GetComponentsInChildren<Transform> ();
+				foreach (Transform cube in cubes) {
+					if (cube.transform.position.x == 0)
+						return;
+				}
 				pos.x -= 1;
+				activeTetromino.transform.position = pos;
 			} else {
+				Transform[] cubes = activeTetromino.GetComponentsInChildren<Transform> ();
+				foreach (Transform cube in cubes) {
+					if (cube.transform.position.x >= 9)
+						return;
+				}
 				pos.x += 1;
+				activeTetromino.transform.position = pos;
 			}
 			activeTetromino.transform.position = pos;
 		}
