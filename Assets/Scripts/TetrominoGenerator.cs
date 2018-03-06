@@ -24,7 +24,7 @@ public class TetrominoGenerator : MonoBehaviour {
 //	[Tooltip("Controls how the swipe gesture ends. See SwipeGestureRecognizerSwipeMode enum for more details.")]
 //	public SwipeGestureRecognizerEndMode SwipeMode = SwipeGestureRecognizerEndMode.EndImmediately;
 
-//	private SwipeGestureRecognizer swipe;
+	private SwipeGestureRecognizer swipe;
 
 	private GameObject activeTetromino;
 	private int counter = 0;
@@ -33,11 +33,9 @@ public class TetrominoGenerator : MonoBehaviour {
 	private State state = State.Generating;
 
 	void Start() {
-//		swipe = new SwipeGestureRecognizer();
-//		swipe.StateUpdated += Swipe_Updated;
-//		swipe.DirectionThreshold = 0;
-//		swipe.MinimumNumberOfTouchesToTrack = swipe.MaximumNumberOfTouchesToTrack = SwipeTouchCount;
-//		FingersScript.Instance.AddGesture(swipe);
+		swipe = new SwipeGestureRecognizer();
+		swipe.StateUpdated += Swipe_Updated;
+		FingersScript.Instance.AddGesture(swipe);
 
 		TapGestureRecognizer tap = new TapGestureRecognizer();
 		tap.StateUpdated += Tap_Updated;
@@ -109,19 +107,16 @@ public class TetrominoGenerator : MonoBehaviour {
 		}
 	}
 
-//	private void Swipe_Updated(GestureRecognizer gesture)
-//	{
-//		SwipeGestureRecognizer swipe = gesture as SwipeGestureRecognizer;
-//		if (swipe.State == GestureRecognizerState.Ended)
-//		{
-//			float angle = Mathf.Atan2(-swipe.DistanceY, swipe.DistanceX) * Mathf.Rad2Deg;
-//			Vector3 pos = activeTetromino.position;
-//			if (angle > -90f && angle < 90f) {
-//				pos.x += 1;
-//			} else {
-//				pos.x -= 1;
-//			}
-//			activeTetromino.position = pos;
-//		}
-//	}
+	private void Swipe_Updated(GestureRecognizer gesture)
+	{
+		SwipeGestureRecognizer swipe = gesture as SwipeGestureRecognizer;
+		if (swipe.State == GestureRecognizerState.Ended)
+		{
+			float angle = Mathf.Atan2(-swipe.DistanceY, swipe.DistanceX) * Mathf.Rad2Deg;
+			if (Mathf.Abs (angle) >= 90.0f)
+				activeTetromino.transform.Rotate(90, 0, 0);
+			else
+				activeTetromino.transform.Rotate(-90, 0, 0);
+		}
+	}
 }
