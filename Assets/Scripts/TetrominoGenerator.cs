@@ -1,16 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using DigitalRubyShared;
+using System.Linq;
 
 public class TetrominoGenerator : MonoBehaviour {
 
-	public Transform straight;
-	public Transform square;
-	public Transform tee;
-	public Transform rightDog;
-	public Transform leftDog;
-	public Transform rightElbow;
-	public Transform leftElbow;
+	public GameObject straight;
+	public GameObject square;
+	public GameObject tee;
+	public GameObject rightDog;
+	public GameObject leftDog;
+	public GameObject rightElbow;
+	public GameObject leftElbow;
 
 	public int frameLength = 100;
 //	public int cameraMin = 10;
@@ -24,7 +26,7 @@ public class TetrominoGenerator : MonoBehaviour {
 
 //	private SwipeGestureRecognizer swipe;
 
-	private Transform activeTetromino;
+	private GameObject activeTetromino;
 	private int counter = 0;
 
 	private enum State { Generating, Dropping };
@@ -52,10 +54,15 @@ public class TetrominoGenerator : MonoBehaviour {
 		if (state == State.Dropping) {
 			counter++;
 			if (counter >= frameLength) {
-				counter = 0;
-				Vector3 pos = activeTetromino.transform.position;
-				pos.y -= 1;
-				activeTetromino.transform.position = pos;
+				if (IsActiveTetrominoColliding ()) {
+					Debug.Log ("Colliding!");
+					state = State.Generating;
+				} else {
+					counter = 0;
+					Vector3 pos = activeTetromino.transform.position;
+					pos.y -= 1;
+					activeTetromino.transform.position = pos;
+				}
 			}
 		} else if (state == State.Generating) {
 			GenerateTetromino ();
@@ -69,32 +76,37 @@ public class TetrominoGenerator : MonoBehaviour {
 //			cam.y = cameraMin;
 //			Camera.main.transform.position = cam;
 //		}
+	}
 
-		// Collisions with the platform
-//		if (Physics2D.Raycast (activeTetromino.position, Vector2.down, 1).collider != null) {
-//			state = State.Generating;
-//		}
-			
+	bool IsActiveTetrominoColliding(){
+		foreach (Transform cube in activeTetromino.transform) {
+			RaycastHit hit;
+			if (Physics.Raycast (cube.position, Vector3.down, out hit)) {
+				if (hit.distance <= 1.0f && !hit.transform.IsChildOf(activeTetromino.transform))
+					return true;
+			}
+		}
+		return false;
 	}
 
 	void GenerateTetromino() {
 		System.Random rnd = new System.Random ();
 		int index = rnd.Next (0, 7);
-		Transform[] tetrominoes = { straight, square, tee, rightDog, leftDog, rightElbow, leftElbow };
-		activeTetromino = (Transform)Instantiate (tetrominoes [index], transform.position, transform.rotation);
+		GameObject[] tetrominoes = { straight, square, tee, rightDog, leftDog, rightElbow, leftElbow };
+		activeTetromino = Instantiate (tetrominoes [index], transform.position, transform.rotation);
 	}
 
 	private void Tap_Updated(GestureRecognizer gesture)
 	{
 		if (gesture.State == GestureRecognizerState.Ended)
 		{
-			Vector3 pos = activeTetromino.position;
+			Vector3 pos = activeTetromino.transform.position;
 			if (gesture.FocusX < Screen.width / 2) {
 				pos.x -= 1;
 			} else {
 				pos.x += 1;
 			}
-			activeTetromino.position = pos;
+			activeTetromino.transform.position = pos;
 		}
 	}
 
