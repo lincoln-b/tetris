@@ -55,7 +55,6 @@ public class TetrominoGenerator : MonoBehaviour {
 			counter++;
 			if (counter >= frameLength) {
 				if (IsActiveTetrominoColliding ()) {
-					Debug.Log ("Colliding!");
 					state = State.Generating;
 				} else {
 					counter = 0;
