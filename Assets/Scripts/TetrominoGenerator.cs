@@ -15,6 +15,7 @@ public class TetrominoGenerator : MonoBehaviour {
 	public GameObject leftElbow;
 
 	public int frameLength = 100;
+
 //	public int cameraMin = 10;
 
 //	[Tooltip("Set the required touches for the swipe.")]
@@ -32,7 +33,10 @@ public class TetrominoGenerator : MonoBehaviour {
 	private enum State { Generating, Dropping };
 	private State state = State.Generating;
 
+	private GameObject[,] grid;
+
 	void Start() {
+		grid = new GameObject[20,10];
 		swipe = new SwipeGestureRecognizer();
 		swipe.StateUpdated += Swipe_Updated;
 		FingersScript.Instance.AddGesture(swipe);
@@ -53,6 +57,8 @@ public class TetrominoGenerator : MonoBehaviour {
 			counter++;
 			if (counter >= frameLength) {
 				if (IsActiveTetrominoColliding (Vector3.down)) {
+					AddActiveTetrominoToGrid ();
+					RemoveFullRows ();
 					state = State.Generating;
 				} else {
 					counter = 0;
@@ -75,6 +81,45 @@ public class TetrominoGenerator : MonoBehaviour {
 //		}
 	}
 
+	void AddActiveTetrominoToGrid() {
+		foreach (Transform cube in activeTetromino.transform) {
+			grid [(int)cube.position.y, (int)cube.position.x] = cube.gameObject;
+		}
+	}
+
+	void RemoveFullRows() {
+		int objcount = 0;
+		for (int i = 0; i < grid.GetLength(0); i++) {
+			string line = i + ": ";
+			bool rowContainsNull = false;
+			for (int j = 0; j < grid.GetLength (1); j++) {
+				if (grid [i,j] == null) {
+					rowContainsNull = true;
+					line = line + "_ ";
+				} else {
+					objcount++;
+					line = line + "X ";
+				}
+			}
+			if (!rowContainsNull) {
+				for (int j = 0; j < grid.GetLength (1); j++) {
+					Destroy (grid [i, j]);
+					for (int k = i + 1; k < grid.GetLength (0); k++) {
+						GameObject obj  = grid [k, j];
+
+						if (obj != null) {
+							Vector3 pos = obj.transform.position;
+							pos.y -= 1;
+							obj.transform.position = pos;
+						}
+
+						grid [k - 1, j] = obj;
+					}
+				}
+			}
+		}
+	}
+
 	bool IsActiveTetrominoColliding(Vector3 direction){
 		foreach (Transform cube in activeTetromino.transform) {
 			RaycastHit hit;
@@ -90,7 +135,7 @@ public class TetrominoGenerator : MonoBehaviour {
 		System.Random rnd = new System.Random ();
 		int index = rnd.Next (0, 7);
 		GameObject[] tetrominoes = { straight, square, tee, rightDog, leftDog, rightElbow, leftElbow };
-		activeTetromino = Instantiate (leftDog, transform.position, transform.rotation);
+		activeTetromino = Instantiate (tetrominoes[index], transform.position, transform.rotation);
 	}
 
 	private void Tap_Updated(GestureRecognizer gesture)
@@ -98,7 +143,12 @@ public class TetrominoGenerator : MonoBehaviour {
 		if (gesture.State == GestureRecognizerState.Ended)
 		{
 			Vector3 pos = activeTetromino.transform.position;
-			if (gesture.FocusX < Screen.width / 2) {
+			if (gesture.FocusY > Screen.height * 3 / 4) {
+				if (gesture.FocusX < Screen.width / 2)
+					activeTetromino.transform.Rotate (90, 0, 0);
+				else
+					activeTetromino.transform.Rotate(-90, 0, 0);
+			} else if (gesture.FocusX < Screen.width / 2) {
 				Transform[] cubes = activeTetromino.GetComponentsInChildren<Transform> ();
 				foreach (Transform cube in cubes) {
 					if (cube.transform.position.x == 0)
