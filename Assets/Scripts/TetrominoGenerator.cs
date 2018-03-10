@@ -30,6 +30,7 @@ public class TetrominoGenerator : MonoBehaviour {
 //	public SwipeGestureRecognizerEndMode SwipeMode = SwipeGestureRecognizerEndMode.EndImmediately;
 
 	private int score = 0;
+	private int highscore = 0;
 	private bool gameOver = false;
 
 	private SwipeGestureRecognizer swipe;
@@ -56,6 +57,8 @@ public class TetrominoGenerator : MonoBehaviour {
 
 		gameOverPanel.SetActive (false);
 		allTetrominoes = new List<GameObject> ();
+
+		highscore = PlayerPrefs.GetInt ("HighScore", 0);
 	}
 
 	void FixedUpdate () {
@@ -77,19 +80,11 @@ public class TetrominoGenerator : MonoBehaviour {
 					}
 				}
 			} else if (state == State.Generating) {
-				Debug.Log ("still generating");
 				GenerateTetromino ();
 				counter = 0;
 				state = State.Dropping;
 			}
 		}
-
-		// Make sure the camera doesn't go too low
-//		Vector3 cam = Camera.main.transform.position;
-//		if (cam.y < cameraMin) {
-//			cam.y = cameraMin;
-//			Camera.main.transform.position = cam;
-//		}
 	}
 
 	void Restart() {
@@ -117,16 +112,49 @@ public class TetrominoGenerator : MonoBehaviour {
 		scoreText.gameObject.SetActive (false);
 		Text endScore = GameObject.Find ("EndScore").GetComponent<Text>();
 		endScore.text = "your score: " + score;
+		Text highScoreText = GameObject.Find ("HighScore").GetComponent<Text> ();
+		if (score > highscore) {
+			highscore = score;
+			PlayerPrefs.SetInt ("HighScore", highscore);
+		}
+		highScoreText.text = "high score: " + highscore;
 	}
 
 	void AddActiveTetrominoToGrid() {
-		foreach (Transform cube in activeTetromino.transform) {
+		int i = 0;
+		Transform[] transforms = activeTetromino.GetComponentsInChildren<Transform> ();
+		foreach (Transform cube in transforms) {
+			if (cube.Equals(activeTetromino.transform))
+				continue;
+			i++;
 			if (cube.position.y >= 19) {
 				GameOver ();
 				return;
 			}
-			grid [(int)cube.position.y, (int)cube.position.x] = cube.gameObject;
+			cube.parent = null;
+			int x = Mathf.RoundToInt (cube.position.x);
+			int y = Mathf.RoundToInt (cube.position.y);
+			grid [y, x] = cube.gameObject;
+//			Debug.Log ("added a cube to grid position: " + (int)cube.position.y + ", " + (int)cube.position.x);
 		}
+		Destroy (activeTetromino);
+		activeTetromino = null;
+		Debug.Log("added " + i + " cubes");
+//		PrintGrid ();
+	}
+
+	void PrintGrid() {		
+		for (int i = 5; i > 0; i--) {
+			string line = "";
+			for (int j = 0; j < grid.GetLength (1); j++) {
+				if (grid [i, j] == null)
+					line += "_ ";
+				else
+					line += "X ";
+			}
+			Debug.Log (line);
+		}
+		Debug.Log ("-----------------------");
 	}
 
 	void AddToScore(int val) {
@@ -136,18 +164,13 @@ public class TetrominoGenerator : MonoBehaviour {
 			frameLength -= 1;
 	}
 
-	void RemoveFullRows() {
-		int objcount = 0;
+	bool ScanAndRemoveOneRow() {
+		bool deleted = false;
 		for (int i = 0; i < grid.GetLength(0); i++) {
-			string line = i + ": ";
 			bool rowContainsNull = false;
 			for (int j = 0; j < grid.GetLength (1); j++) {
 				if (grid [i,j] == null) {
 					rowContainsNull = true;
-					line = line + "_ ";
-				} else {
-					objcount++;
-					line = line + "X ";
 				}
 			}
 			if (!rowContainsNull) {
@@ -162,12 +185,19 @@ public class TetrominoGenerator : MonoBehaviour {
 							pos.y -= 1;
 							obj.transform.position = pos;
 						}
-
 						grid [k - 1, j] = obj;
 					}
 				}
+				deleted = true;
 			}
 		}
+//		PrintGrid ();
+		return deleted;
+	}
+
+	void RemoveFullRows() {
+		while (ScanAndRemoveOneRow ())
+			;
 	}
 
 	bool IsActiveTetrominoColliding(Vector3 direction){
@@ -199,11 +229,16 @@ public class TetrominoGenerator : MonoBehaviour {
 		{
 			Vector3 pos = activeTetromino.transform.position;
 			if (gesture.FocusY > Screen.height * 3 / 4) {
-				if (gesture.FocusX < Screen.width / 2)
+				if (gesture.FocusX < Screen.width * 2 / 3)
 					activeTetromino.transform.Rotate (90, 0, 0);
 				else
-					activeTetromino.transform.Rotate(-90, 0, 0);
-			} else if (gesture.FocusX < Screen.width / 2) {
+					activeTetromino.transform.Rotate (-90, 0, 0);
+			} else if (gesture.FocusY < Screen.height / 6) {
+				while (!IsActiveTetrominoColliding(Vector2.down)) {
+					pos.y--;
+					activeTetromino.transform.position = pos;
+				}
+			}else if (gesture.FocusX < Screen.width * 2 / 3) {
 				Transform[] cubes = activeTetromino.GetComponentsInChildren<Transform> ();
 				foreach (Transform cube in cubes) {
 					if (cube.transform.position.x == 0)
