@@ -121,12 +121,10 @@ public class TetrominoGenerator : MonoBehaviour {
 	}
 
 	void AddActiveTetrominoToGrid() {
-		int i = 0;
 		Transform[] transforms = activeTetromino.GetComponentsInChildren<Transform> ();
 		foreach (Transform cube in transforms) {
 			if (cube.Equals(activeTetromino.transform))
 				continue;
-			i++;
 			if (cube.position.y >= 19) {
 				GameOver ();
 				return;
@@ -135,12 +133,9 @@ public class TetrominoGenerator : MonoBehaviour {
 			int x = Mathf.RoundToInt (cube.position.x);
 			int y = Mathf.RoundToInt (cube.position.y);
 			grid [y, x] = cube.gameObject;
-//			Debug.Log ("added a cube to grid position: " + (int)cube.position.y + ", " + (int)cube.position.x);
 		}
 		Destroy (activeTetromino);
 		activeTetromino = null;
-		Debug.Log("added " + i + " cubes");
-//		PrintGrid ();
 	}
 
 	void PrintGrid() {		
@@ -191,7 +186,6 @@ public class TetrominoGenerator : MonoBehaviour {
 				deleted = true;
 			}
 		}
-//		PrintGrid ();
 		return deleted;
 	}
 
